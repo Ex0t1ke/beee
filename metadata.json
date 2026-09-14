@@ -1,0 +1,6 @@
+{
+  "name": "Овечий Кликер",
+  "description": "Красивый кликер с прыгающей овечкой в загоне и счетчиком шерсти.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
