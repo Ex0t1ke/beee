@@ -5,6 +5,7 @@ import { WoolCounter } from './components/WoolCounter';
 import { UpgradesPanel } from './components/UpgradesPanel';
 import { FloatingWoolParticles } from './components/FloatingWoolParticles';
 import { GoldenCloverEvent } from './components/GoldenCloverEvent';
+import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { INITIAL_UPGRADES, ACCESSORIES, ACHIEVEMENTS } from './data/gameData';
 import { Upgrade, FloatingParticle, Achievement } from './types';
 import confetti from 'canvas-confetti';
@@ -297,6 +298,9 @@ export default function App() {
         woolPerClick={woolPerClick}
         isGoldenMode={isGoldenMode}
       />
+
+      {/* PWA / INSTALL AS APP BANNER & BUTTON */}
+      <PWAInstallBanner />
 
       {/* 3. CENTER PADDOCK: ANIMATED JUMPING SHEEP CHARACTER (ОВЕЧКА С АНИМИРОВАННЫМИ ПРЫЖКАМИ) */}
       <div className="relative z-10 w-full h-full flex flex-col items-center justify-end pb-20 md:pb-28">
