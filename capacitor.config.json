@@ -1,0 +1,8 @@
+{
+  "appId": "com.sheep.clicker",
+  "appName": "Sheep Clicker",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

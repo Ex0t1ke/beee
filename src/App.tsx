@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FarmPenBackground } from './components/FarmPenBackground';
 import { AnimatedSheep } from './components/AnimatedSheep';
-import { WoolCounter } from './components/WoolCounter';
+import { HeaderBar } from './components/HeaderBar';
 import { UpgradesPanel } from './components/UpgradesPanel';
 import { FloatingWoolParticles } from './components/FloatingWoolParticles';
 import { GoldenCloverEvent } from './components/GoldenCloverEvent';
 import { AnimatedPetsLayer } from './components/AnimatedPetsLayer';
 import { WolfDefenseLayer } from './components/WolfDefenseLayer';
-import { WeatherIndicator } from './components/WeatherIndicator';
+import { MysteryBalloon, BalloonReward } from './components/MysteryBalloon';
 import {
   INITIAL_UPGRADES,
   ACCESSORIES,
@@ -209,6 +209,13 @@ export default function App() {
   const [isGoldenMode, setIsGoldenMode] = useState(false);
   const goldenTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Golden Sheep Fever (Лихорадка x5)
+  const [isFeverMode, setIsFeverMode] = useState(false);
+  const feverTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // In-game prestige celebration toast (replaces window.alert)
+  const [prestigeToast, setPrestigeToast] = useState<{ horns: number } | null>(null);
+
   // Click Combo Frenzy mechanic
   const [combo, setCombo] = useState(0);
   const comboTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -222,7 +229,7 @@ export default function App() {
   const [particles, setParticles] = useState<FloatingParticle[]>([]);
   const particleIdCounter = useRef(0);
 
-  // State ref for synchronous autosave
+  // State ref continuously synchronized for tick loops, intervals & autosave (no useEffect = no re-render loops!)
   const stateRef = useRef({
     wool,
     totalWoolGathered,
@@ -237,23 +244,7 @@ export default function App() {
     dailyQuests,
     achievements,
   });
-
-  useEffect(() => {
-    stateRef.current = {
-      wool,
-      totalWoolGathered,
-      clicks,
-      goldenHorns,
-      prestigeCount,
-      soundEnabled,
-      activeAccessory,
-      upgrades,
-      ownedPets,
-      prestigeUpgrades,
-      dailyQuests,
-      achievements,
-    };
-  }, [
+  stateRef.current = {
     wool,
     totalWoolGathered,
     clicks,
@@ -266,7 +257,7 @@ export default function App() {
     prestigeUpgrades,
     dailyQuests,
     achievements,
-  ]);
+  };
 
   // -------------------------------------------------------------
   // MULTIPLIER & POWER CALCULATIONS
@@ -293,6 +284,7 @@ export default function App() {
 
   // Combo multiplier
   const comboMultiplier = 1 + combo * 0.05;
+  const feverMultiplier = isFeverMode ? 5 : 1;
 
   // Calculate Wool Per Click
   const woolPerClick = React.useMemo(() => {
@@ -317,6 +309,7 @@ export default function App() {
       base *
         petMultiplier *
         comboMultiplier *
+        feverMultiplier *
         hornGlobalMultiplier *
         (1 + accessoryClickBonus) *
         weather.clickMultiplier
@@ -327,11 +320,15 @@ export default function App() {
     upgrades,
     ownedPets,
     comboMultiplier,
+    feverMultiplier,
     hornGlobalMultiplier,
     accessoryClickBonus,
     weather.clickMultiplier,
     isGoldenMode,
   ]);
+
+  const woolPerClickRef = useRef(woolPerClick);
+  woolPerClickRef.current = woolPerClick;
 
   // Calculate Wool Per Second
   const woolPerSecond = React.useMemo(() => {
@@ -351,8 +348,9 @@ export default function App() {
       }
     }
 
+    const passiveFeverMultiplier = isFeverMode ? 2 : 1;
     const calculated = Math.round(
-      base * hornGlobalMultiplier * (1 + accessoryPassiveBonus) * weather.woolMultiplier
+      base * hornGlobalMultiplier * (1 + accessoryPassiveBonus) * weather.woolMultiplier * passiveFeverMultiplier
     );
     return isGoldenMode ? calculated * 3 : calculated;
   }, [
@@ -362,6 +360,7 @@ export default function App() {
     accessoryPassiveBonus,
     weather.woolMultiplier,
     isGoldenMode,
+    isFeverMode,
   ]);
 
   const woolPerSecondRef = useRef(woolPerSecond);
@@ -400,7 +399,10 @@ export default function App() {
       const randomX = 25 + Math.random() * 50;
       const randomY = 40 + Math.random() * 25;
       const clicksNeeded = 5 + Math.floor(Math.random() * 4);
-      const bountyValue = Math.max(100, Math.floor(woolPerClick * 25 + woolPerSecond * 10));
+      const bountyValue = Math.max(
+        100,
+        Math.floor(woolPerClickRef.current * 25 + woolPerSecondRef.current * 10)
+      );
 
       setWolf({
         id: Date.now(),
@@ -420,9 +422,9 @@ export default function App() {
     }, 45000);
 
     return () => clearInterval(wolfInterval);
-  }, [wolf, woolPerClick, woolPerSecond]);
+  }, [wolf !== null]);
 
-  // Wolf timer countdown
+  // Wolf timer countdown (runs cleanly with interval without tearing down on each tick)
   useEffect(() => {
     if (!wolf) return;
     const timer = setInterval(() => {
@@ -432,59 +434,55 @@ export default function App() {
           // Wolf escaped!
           return null;
         }
-        return { ...prev, timeLeft: prev.timeLeft - 0.2 };
+        return { ...prev, timeLeft: Number((prev.timeLeft - 0.2).toFixed(1)) };
       });
     }, 200);
 
     return () => clearInterval(timer);
-  }, [wolf]);
+  }, [wolf?.id]);
 
-  // Tap wolf event
+  // Tap wolf event - cleanly structured outside nested state setters
   const handleTapWolf = useCallback(
     (e: React.MouseEvent) => {
       if (!wolf) return;
 
       playWoolPop();
 
-      setWolf((prev) => {
-        if (!prev) return null;
-        const nextClicks = prev.clicksRemaining - 1;
-        if (nextClicks <= 0) {
-          // Wolf Defeated!
-          confetti({
-            particleCount: 60,
-            spread: 80,
-            origin: { x: prev.x / 100, y: prev.y / 100 },
-          });
+      const nextClicks = wolf.clicksRemaining - 1;
+      if (nextClicks <= 0) {
+        // Wolf Defeated!
+        confetti({
+          particleCount: 60,
+          spread: 80,
+          origin: { x: wolf.x / 100, y: wolf.y / 100 },
+        });
 
-          if (soundEnabled) playChimeSuccess();
+        if (soundEnabled) playChimeSuccess();
 
-          // Reward bounty
-          setWool((w) => w + prev.bounty);
-          setTotalWoolGathered((tw) => tw + prev.bounty);
+        const bounty = wolf.bounty;
+        setWool((w) => w + bounty);
+        setTotalWoolGathered((tw) => tw + bounty);
 
-          // Chance for bonus Golden Horn
-          if (Math.random() < 0.35) {
-            setGoldenHorns((gh) => gh + 1);
-          }
-
-          // Advance quest
-          setDailyQuests((quests) =>
-            quests.map((q) =>
-              q.id === 'quest_defend_wolf'
-                ? {
-                    ...q,
-                    current: Math.min(q.target, q.current + 1),
-                    completed: q.current + 1 >= q.target,
-                  }
-                : q
-            )
-          );
-
-          return null;
+        if (Math.random() < 0.35) {
+          setGoldenHorns((gh) => gh + 1);
         }
-        return { ...prev, clicksRemaining: nextClicks };
-      });
+
+        setDailyQuests((quests) =>
+          quests.map((q) =>
+            q.id === 'quest_defend_wolf'
+              ? {
+                  ...q,
+                  current: Math.min(q.target, q.current + 1),
+                  completed: q.current + 1 >= q.target,
+                }
+              : q
+          )
+        );
+
+        setWolf(null);
+      } else {
+        setWolf((prev) => (prev ? { ...prev, clicksRemaining: nextClicks } : null));
+      }
     },
     [wolf, soundEnabled]
   );
@@ -560,28 +558,14 @@ export default function App() {
     }
   }, []);
 
-  // 5000ms debounced autosave
+  // Periodic 5000ms autosave using latest stateRef (clean interval, no timer thrashing)
   useEffect(() => {
-    const timeout = setTimeout(() => {
+    const saveInterval = setInterval(() => {
       saveToStorage();
     }, 5000);
 
-    return () => clearTimeout(timeout);
-  }, [
-    wool,
-    totalWoolGathered,
-    clicks,
-    goldenHorns,
-    prestigeCount,
-    soundEnabled,
-    activeAccessory,
-    upgrades,
-    ownedPets,
-    prestigeUpgrades,
-    dailyQuests,
-    achievements,
-    saveToStorage,
-  ]);
+    return () => clearInterval(saveInterval);
+  }, [saveToStorage]);
 
   // Synchronous beforeunload / pagehide listener
   useEffect(() => {
@@ -597,34 +581,51 @@ export default function App() {
     };
   }, [saveToStorage]);
 
-  // Achievement tracker
+  // Safe periodic achievement tracker (every 1.5s, eliminates infinite loops completely!)
   useEffect(() => {
-    const activePetsCount = ownedPets.filter((p) => p.level > 0).length;
+    const checkAchievements = () => {
+      const {
+        totalWoolGathered: tw,
+        clicks: cl,
+        ownedPets: op,
+        prestigeCount: pc,
+        achievements: currAch,
+      } = stateRef.current;
+      const activePetsCount = op.filter((p) => p.level > 0).length;
 
-    setAchievements((prev) =>
-      prev.map((ach) => {
+      let anyNewUnlocked = false;
+      const updated = currAch.map((ach) => {
         if (ach.unlocked) return ach;
         let unlocked = false;
-        if (ach.type === 'totalWool' && totalWoolGathered >= ach.target) {
+        if (ach.type === 'totalWool' && tw >= ach.target) {
           unlocked = true;
-        } else if (ach.type === 'clicks' && clicks >= ach.target) {
+        } else if (ach.type === 'clicks' && cl >= ach.target) {
           unlocked = true;
         } else if (ach.type === 'pets' && activePetsCount >= ach.target) {
           unlocked = true;
-        } else if (ach.type === 'prestige' && prestigeCount >= ach.target) {
+        } else if (ach.type === 'prestige' && pc >= ach.target) {
           unlocked = true;
         }
         if (unlocked) {
-          confetti({
-            particleCount: 40,
-            spread: 60,
-            origin: { x: 0.5, y: 0.7 },
-          });
+          anyNewUnlocked = true;
+          return { ...ach, unlocked: true };
         }
-        return unlocked ? { ...ach, unlocked: true } : ach;
-      })
-    );
-  }, [totalWoolGathered, clicks, ownedPets, prestigeCount]);
+        return ach;
+      });
+
+      if (anyNewUnlocked) {
+        confetti({
+          particleCount: 45,
+          spread: 65,
+          origin: { x: 0.5, y: 0.65 },
+        });
+        setAchievements(updated);
+      }
+    };
+
+    const interval = setInterval(checkAchievements, 1500);
+    return () => clearInterval(interval);
+  }, []);
 
   // -------------------------------------------------------------
   // SHEEP SHEAR CLICK HANDLER
@@ -651,23 +652,39 @@ export default function App() {
       );
 
       // Increase combo streak
-      setCombo((prev) => {
-        const next = Math.min(prev + 1, 20);
-        if (next >= 10) {
-          setDailyQuests((quests) =>
-            quests.map((q) =>
-              q.id === 'quest_combo'
-                ? {
-                    ...q,
-                    current: Math.max(q.current, next),
-                    completed: true,
-                  }
-                : q
-            )
-          );
-        }
-        return next;
-      });
+      const currentCombo = combo;
+      const nextCombo = Math.min(currentCombo + 1, 20);
+      setCombo(nextCombo);
+
+      if (nextCombo >= 10) {
+        setDailyQuests((quests) =>
+          quests.map((q) =>
+            q.id === 'quest_combo'
+              ? {
+                  ...q,
+                  current: Math.max(q.current, nextCombo),
+                  completed: true,
+                }
+              : q
+          )
+        );
+      }
+
+      // If player hits 15 combo: activate Golden Sheep Fever for 8s!
+      if (nextCombo >= 15 && !isFeverMode) {
+        setIsFeverMode(true);
+        if (soundEnabled) playChimeSuccess();
+        confetti({
+          particleCount: 50,
+          spread: 70,
+          origin: { x: 0.5, y: 0.6 },
+        });
+
+        if (feverTimerRef.current) clearTimeout(feverTimerRef.current);
+        feverTimerRef.current = setTimeout(() => {
+          setIsFeverMode(false);
+        }, 8000);
+      }
 
       if (comboTimerRef.current) clearTimeout(comboTimerRef.current);
       comboTimerRef.current = setTimeout(() => {
@@ -680,13 +697,13 @@ export default function App() {
       const clickY = e.clientY || rect.top + rect.height / 2;
 
       const isCritHit =
-        isGoldenMode || combo >= 5 || Math.random() < 0.12 + prestigeCritChance;
+        isFeverMode || isGoldenMode || combo >= 5 || Math.random() < 0.12 + prestigeCritChance;
       const newParticleId = ++particleIdCounter.current;
       const newParticle: FloatingParticle = {
         id: newParticleId,
         x: clickX,
         y: clickY,
-        text: `+${clickVal}`,
+        text: isFeverMode ? `+${clickVal} 🔥` : `+${clickVal}`,
         isCrit: isCritHit,
       };
 
@@ -696,7 +713,7 @@ export default function App() {
         setParticles((prev) => prev.filter((p) => p.id !== newParticleId));
       }, 850);
     },
-    [woolPerClick, isGoldenMode, combo, prestigeCritChance]
+    [woolPerClick, isGoldenMode, isFeverMode, combo, prestigeCritChance, soundEnabled]
   );
 
   // Keyboard Spacebar listener to shear
@@ -727,22 +744,17 @@ export default function App() {
 
   // Buy regular upgrade
   const handleBuyUpgrade = useCallback((upgradeId: string) => {
+    const item = stateRef.current.upgrades.find((u) => u.id === upgradeId);
+    if (!item || stateRef.current.wool < item.cost) return;
+
+    const itemCost = item.cost;
+    const nextCost = Math.round(item.cost * item.costMultiplier);
+
+    setWool((w) => w - itemCost);
     setUpgrades((prev) =>
-      prev.map((item) => {
-        if (item.id === upgradeId) {
-          setWool((currentWool) => {
-            if (currentWool < item.cost) return currentWool;
-            return currentWool - item.cost;
-          });
-          const nextCost = Math.round(item.cost * item.costMultiplier);
-          return {
-            ...item,
-            owned: item.owned + 1,
-            cost: nextCost,
-          };
-        }
-        return item;
-      })
+      prev.map((u) =>
+        u.id === upgradeId ? { ...u, owned: u.owned + 1, cost: nextCost } : u
+      )
     );
   }, []);
 
@@ -751,23 +763,16 @@ export default function App() {
     const def = PET_DEFINITIONS.find((p) => p.id === petId);
     if (!def) return;
 
+    const existing = stateRef.current.ownedPets.find((p) => p.id === petId);
+    const currentLevel = existing ? existing.level : 0;
+    const cost = Math.round(def.cost * Math.pow(1.6, currentLevel));
+
+    if (stateRef.current.wool < cost) return;
+
+    setWool((w) => w - cost);
     setOwnedPets((prev) => {
-      const existing = prev.find((p) => p.id === petId);
-      const currentLevel = existing ? existing.level : 0;
-      const cost = Math.round(def.cost * Math.pow(1.6, currentLevel));
-
-      let purchased = false;
-      setWool((currentWool) => {
-        if (currentWool >= cost) {
-          purchased = true;
-          return currentWool - cost;
-        }
-        return currentWool;
-      });
-
-      if (!purchased) return prev;
-
-      if (existing) {
+      const match = prev.find((p) => p.id === petId);
+      if (match) {
         return prev.map((p) =>
           p.id === petId
             ? { ...p, level: p.level + 1, happiness: Math.min(100, p.happiness + 20) }
@@ -790,39 +795,31 @@ export default function App() {
   // Feed Pet
   const handleFeedPet = useCallback((petId: string) => {
     const feedCost = 50;
-    let fed = false;
+    if (stateRef.current.wool < feedCost) return { success: false, woolBonus: 0 };
 
-    setWool((currentWool) => {
-      if (currentWool >= feedCost) {
-        fed = true;
-        return currentWool - feedCost;
-      }
-      return currentWool;
-    });
+    setWool((w) => w - feedCost);
+    setOwnedPets((prev) =>
+      prev.map((p) =>
+        p.id === petId
+          ? { ...p, happiness: Math.min(100, p.happiness + 35), lastFed: Date.now() }
+          : p
+      )
+    );
 
-    if (fed) {
-      setOwnedPets((prev) =>
-        prev.map((p) =>
-          p.id === petId
-            ? { ...p, happiness: Math.min(100, p.happiness + 35), lastFed: Date.now() }
-            : p
-        )
-      );
+    // Advance feed pet daily quest
+    setDailyQuests((quests) =>
+      quests.map((q) =>
+        q.id === 'quest_feed_pet'
+          ? {
+              ...q,
+              current: Math.min(q.target, q.current + 1),
+              completed: q.current + 1 >= q.target,
+            }
+          : q
+      )
+    );
 
-      // Advance feed pet daily quest
-      setDailyQuests((quests) =>
-        quests.map((q) =>
-          q.id === 'quest_feed_pet'
-            ? {
-                ...q,
-                current: Math.min(q.target, q.current + 1),
-                completed: q.current + 1 >= q.target,
-              }
-            : q
-        )
-      );
-    }
-    return { success: fed, woolBonus: 0 };
+    return { success: true, woolBonus: 0 };
   }, []);
 
   // Golden Clover Catch Event
@@ -839,6 +836,29 @@ export default function App() {
       setIsGoldenMode(false);
     }, 12000);
   }, []);
+
+  // Mystery Balloon Reward Collector
+  const handleBalloonReward = useCallback(
+    (reward: BalloonReward) => {
+      if (soundEnabled) playChimeSuccess();
+
+      if (reward.type === 'wool' && reward.amount) {
+        setWool((w) => w + reward.amount!);
+        setTotalWoolGathered((tw) => tw + reward.amount!);
+      } else if (reward.type === 'horns' && reward.amount) {
+        setGoldenHorns((gh) => gh + reward.amount!);
+      } else if (reward.type === 'fever') {
+        setIsFeverMode(true);
+        if (feverTimerRef.current) clearTimeout(feverTimerRef.current);
+        feverTimerRef.current = setTimeout(() => {
+          setIsFeverMode(false);
+        }, 10000);
+      } else if (reward.type === 'clover') {
+        handleGoldenCloverCollect();
+      }
+    },
+    [soundEnabled, handleGoldenCloverCollect]
+  );
 
   // -------------------------------------------------------------
   // PRESTIGE EXECUTION ("Золотое Возрождение")
@@ -863,29 +883,19 @@ export default function App() {
     setWool(0);
     setUpgrades(INITIAL_UPGRADES);
 
-    // Give visual celebration
-    alert(`🎉 Золотое Возрождение совершено!\n\nВы получили ${hornsEarned} 📯 Золотых Рогов! Ваша овечка стала сильнее навсегда!`);
+    // Set non-blocking celebration toast (no window.alert iframe bugs)
+    setPrestigeToast({ horns: hornsEarned });
   }, [wool, soundEnabled]);
 
   // Buy Prestige Upgrade with Golden Horns
   const handleBuyPrestigeUpgrade = useCallback((upgradeId: string) => {
+    const item = stateRef.current.prestigeUpgrades.find((pu) => pu.id === upgradeId);
+    if (!item || item.level >= item.maxLevel || stateRef.current.goldenHorns < item.cost) return;
+
+    const cost = item.cost;
+    setGoldenHorns((gh) => gh - cost);
     setPrestigeUpgrades((prev) =>
-      prev.map((pu) => {
-        if (pu.id === upgradeId && pu.level < pu.maxLevel) {
-          let bought = false;
-          setGoldenHorns((gh) => {
-            if (gh >= pu.cost) {
-              bought = true;
-              return gh - pu.cost;
-            }
-            return gh;
-          });
-          if (bought) {
-            return { ...pu, level: pu.level + 1 };
-          }
-        }
-        return pu;
-      })
+      prev.map((pu) => (pu.id === upgradeId ? { ...pu, level: pu.level + 1 } : pu))
     );
   }, []);
 
@@ -939,31 +949,39 @@ export default function App() {
         onFeedPet={handleFeedPet}
       />
 
-      {/* 3. DYNAMIC WEATHER & CLIMATE INDICATOR */}
-      <WeatherIndicator weather={weather} />
-
-      {/* 4. WOOL COUNTER, COMBO FRENZY & REFRESH RATE GAUGE */}
-      <WoolCounter
+      {/* 3. UNIFIED HEADER: WOOL COUNTER, WEATHER, COMBO & FPS */}
+      <HeaderBar
         wool={wool}
         woolPerSecond={woolPerSecond}
         woolPerClick={woolPerClick}
         combo={combo}
         fps={fps}
         isGoldenMode={isGoldenMode}
+        isFeverMode={isFeverMode}
+        weather={weather}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => setSoundEnabled((prev) => !prev)}
       />
 
-      {/* 5. CENTER PADDOCK: ANIMATED JUMPING SHEEP */}
-      <div className="relative z-10 w-full h-full flex flex-col items-center justify-end pb-20 md:pb-28 pointer-events-none">
+      {/* 4. PASTURE MYSTERY BALLOON (Fever, Wool, Golden Horns) */}
+      <MysteryBalloon
+        onCollectReward={handleBalloonReward}
+        woolPerClick={woolPerClick}
+        woolPerSecond={woolPerSecond}
+      />
+
+      {/* 5. CENTER PADDOCK: ANIMATED JUMPING SHEEP WITH GUARANTEED CLEARANCE */}
+      <div className="relative z-10 w-full h-full flex flex-col items-center justify-center pt-24 sm:pt-28 pb-16 md:pb-24 pointer-events-none">
         <div id="main-sheep-character" className="relative flex flex-col items-center pointer-events-auto">
           <AnimatedSheep
             onShear={handleShear}
             soundEnabled={soundEnabled}
             activeAccessory={activeAccessory}
-            isGoldenMode={isGoldenMode}
+            isGoldenMode={isGoldenMode || isFeverMode}
           />
 
           {/* Pasture instruction pill */}
-          <div className="mt-3 px-4 py-1.5 rounded-full bg-emerald-950/35 backdrop-blur-sm text-white/95 text-xs md:text-sm font-semibold tracking-wide border border-white/20 shadow-sm flex items-center gap-2">
+          <div className="mt-3 px-4 py-1.5 rounded-full bg-emerald-950/40 backdrop-blur-sm text-white/95 text-xs md:text-sm font-semibold tracking-wide border border-white/20 shadow-sm flex items-center gap-2">
             <span>Нажимай на овечку, чтобы собрать шерсть!</span>
             <span className="hidden sm:inline opacity-75 font-normal">
               (или клавиша Пробел)
@@ -983,6 +1001,32 @@ export default function App() {
         onCollect={handleGoldenCloverCollect}
         soundEnabled={soundEnabled}
       />
+
+      {/* PRESTIGE CELEBRATION MODAL */}
+      {prestigeToast && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-amber-50 border-4 border-amber-400 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl">
+            <div className="text-5xl mb-2 animate-bounce">📯✨🐑</div>
+            <h2 className="text-2xl font-black text-amber-950 mb-2">Золотое Возрождение!</h2>
+            <p className="text-amber-800 text-sm mb-4">
+              Вы успешно переродили отару и получили вечное благословение золотого руна!
+            </p>
+            <div className="bg-gradient-to-r from-amber-100 to-amber-200 border-2 border-amber-300 rounded-2xl py-3 px-4 mb-5 shadow-inner flex items-center justify-center gap-3">
+              <span className="text-3xl">📯</span>
+              <span className="text-3xl font-black text-amber-700">
+                +{prestigeToast.horns}
+              </span>
+              <span className="text-sm font-bold text-amber-900">Золотых Рогов</span>
+            </div>
+            <button
+              onClick={() => setPrestigeToast(null)}
+              className="w-full py-3 px-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-lg rounded-2xl shadow-lg active:scale-95 transition-transform cursor-pointer"
+            >
+              Продолжить с новой силой!
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 9. OFFLINE PROGRESS MODAL BANNER */}
       {offlineReport && (

@@ -40,12 +40,15 @@ jobs:
       - name: Initialize Capacitor 6 Android
         run: |
           npm install --no-save @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
-          npx cap init "Sheep Clicker" "com.sheep.clicker" --web-dir dist
-          npx cap add android
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
           npx cap sync android
           # Bump versionCode to 3 and versionName to 1.2.0 for smooth APK update
-          sed -i 's/versionCode 1/versionCode 3/g' android/app/build.gradle
-          sed -i 's/versionName "1.0"/versionName "1.2.0"/g' android/app/build.gradle
+          if [ -f "android/app/build.gradle" ]; then
+            sed -i 's/versionCode 1/versionCode 3/g' android/app/build.gradle || true
+            sed -i 's/versionName "1.0"/versionName "1.2.0"/g' android/app/build.gradle || true
+          fi
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
