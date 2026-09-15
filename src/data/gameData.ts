@@ -1,4 +1,4 @@
-import { Upgrade, Accessory, Achievement, PetDefinition } from '../types';
+import { Upgrade, Accessory, Achievement, PetDefinition, PrestigeUpgrade, WeatherState, DailyQuest } from '../types';
 
 export const INITIAL_UPGRADES: Upgrade[] = [
   // Click power upgrades
@@ -218,37 +218,47 @@ export const ACCESSORIES: Accessory[] = [
   {
     id: 'flower',
     name: 'Цветочный веночек',
-    description: 'Полевые ромашки и клевер.',
+    description: 'Полевые ромашки и клевер. (+5% к пассивному доходу)',
     unlockedAtWool: 100,
     icon: '🌸',
+    bonusType: 'passiveBonus',
+    bonusValue: 0.05,
   },
   {
     id: 'bell',
     name: 'Золотой колокольчик',
-    description: 'Весёлый бубенчик на атласной ленте.',
+    description: 'Весёлый бубенчик на ленте. (+10% к силе клика)',
     unlockedAtWool: 500,
     icon: '🔔',
+    bonusType: 'clickBonus',
+    bonusValue: 0.1,
   },
   {
     id: 'hat',
     name: 'Соломенная шляпка',
-    description: 'Защищает овечку от полуденного солнца.',
+    description: 'Защищает овечку от полуденного солнца. (+8% шанс крита)',
     unlockedAtWool: 2000,
     icon: '👒',
+    bonusType: 'critChance',
+    bonusValue: 0.08,
   },
   {
     id: 'sunglasses',
     name: 'Крутые очки',
-    description: 'Самая стильная овечка в деревне.',
+    description: 'Самая стильная овечка в деревне. (+15% к клику и +10% к пассиву)',
     unlockedAtWool: 8000,
     icon: '🕶️',
+    bonusType: 'clickBonus',
+    bonusValue: 0.15,
   },
   {
     id: 'crown',
     name: 'Королевская корона',
-    description: 'Настоящая королева пушистых лугов!',
+    description: 'Настоящая королева пушистых лугов! (+35% ко всей шерсти)',
     unlockedAtWool: 25000,
     icon: '👑',
+    bonusType: 'passiveBonus',
+    bonusValue: 0.35,
   },
 ];
 
@@ -324,5 +334,164 @@ export const ACHIEVEMENTS: Achievement[] = [
     type: 'pets',
     unlocked: false,
     icon: '🌟',
+  },
+  {
+    id: 'prestige_first',
+    title: 'Золотое перерождение',
+    description: 'Совершите первое возрождение пастбища и получите Золотые Рога',
+    target: 1,
+    type: 'prestige',
+    unlocked: false,
+    icon: '✨',
+  },
+];
+
+// -------------------------------------------------------------
+// NEW FEATURE: PRESTIGE SYSTEM ("Золотое Возрождение")
+// -------------------------------------------------------------
+export const INITIAL_PRESTIGE_UPGRADES: PrestigeUpgrade[] = [
+  {
+    id: 'prestige_horn_multiplier',
+    name: 'Сила Золотого Рога',
+    description: '+25% ко всей добыче шерсти навсегда за каждый уровень',
+    cost: 1,
+    level: 0,
+    maxLevel: 10,
+    effectType: 'allWoolMultiplier',
+    valuePerLevel: 0.25,
+    icon: 'Horn',
+  },
+  {
+    id: 'prestige_clover_frequency',
+    name: 'Магическая поляна',
+    description: 'Золотой клевер появляется на 20% чаще',
+    cost: 2,
+    level: 0,
+    maxLevel: 5,
+    effectType: 'cloverFrequency',
+    valuePerLevel: 0.2,
+    icon: 'Sparkles',
+  },
+  {
+    id: 'prestige_crit_chance',
+    name: 'Алмазный срез',
+    description: '+5% шанс критического супер-среза (х5 шерсти за клик)',
+    cost: 2,
+    level: 0,
+    maxLevel: 8,
+    effectType: 'clickCritRate',
+    valuePerLevel: 0.05,
+    icon: 'Zap',
+  },
+  {
+    id: 'prestige_offline_boost',
+    name: 'Ночные пастухи',
+    description: '+30% к эффективности добычи шерсти в офлайн-режиме',
+    cost: 3,
+    level: 0,
+    maxLevel: 5,
+    effectType: 'offlineEfficiency',
+    valuePerLevel: 0.3,
+    icon: 'Moon',
+  },
+];
+
+// -------------------------------------------------------------
+// NEW FEATURE: WEATHER ENGINE EVENTS
+// -------------------------------------------------------------
+export const WEATHER_PRESETS: Omit<WeatherState, 'duration'>[] = [
+  {
+    type: 'sunny',
+    name: 'Ясное солнышко',
+    description: 'Приятное тепло на лугу. Стандартный прирост шерсти.',
+    icon: '☀️',
+    woolMultiplier: 1.0,
+    clickMultiplier: 1.0,
+  },
+  {
+    type: 'rainbow',
+    name: 'Волшебная Радуга',
+    description: 'Вдохновение овечек! Двойная шерсть с кликов и пассива (х2.0)!',
+    icon: '🌈',
+    woolMultiplier: 2.0,
+    clickMultiplier: 2.0,
+  },
+  {
+    type: 'rain',
+    name: 'Грибной дождичек',
+    description: 'Трава растет с невероятной скоростью! +50% к пассивной шерсти.',
+    icon: '🌧️',
+    woolMultiplier: 1.5,
+    clickMultiplier: 1.0,
+  },
+  {
+    type: 'windy',
+    name: 'Освежающий ветерок',
+    description: 'Легкий бриз остужает овечку. Клики на 50% мощнее (х1.5)!',
+    icon: '🍃',
+    woolMultiplier: 1.0,
+    clickMultiplier: 1.5,
+  },
+  {
+    type: 'night',
+    name: 'Звездная ночь',
+    description: 'Тихий сон под луной. Спокойствие и +20% к критам стрижки.',
+    icon: '🌙',
+    woolMultiplier: 1.2,
+    clickMultiplier: 1.2,
+  },
+];
+
+// -------------------------------------------------------------
+// NEW FEATURE: DAILY SHEPHERD QUESTS
+// -------------------------------------------------------------
+export const INITIAL_DAILY_QUESTS: DailyQuest[] = [
+  {
+    id: 'quest_clicks',
+    title: 'Пушистый массаж',
+    description: 'Кликните по овечке 100 раз',
+    target: 100,
+    current: 0,
+    rewardType: 'wool',
+    rewardAmount: 500,
+    completed: false,
+    claimed: false,
+    icon: '👆',
+  },
+  {
+    id: 'quest_combo',
+    title: 'Мастер темпа',
+    description: 'Достигните комбо x10 в стрижке',
+    target: 10,
+    current: 0,
+    rewardType: 'wool',
+    rewardAmount: 1200,
+    completed: false,
+    claimed: false,
+    icon: '🔥',
+  },
+  {
+    id: 'quest_feed_pet',
+    title: 'Заботливый хозяин',
+    description: 'Покормите любого питомца 3 раза',
+    target: 3,
+    current: 0,
+    rewardType: 'wool',
+    rewardAmount: 800,
+    completed: false,
+    claimed: false,
+    icon: '🥕',
+  },
+  {
+    id: 'quest_defend_wolf',
+    title: 'Страж отары',
+    description: 'Прогоните хитрого волка с пастбища',
+    target: 1,
+    current: 0,
+    rewardType: 'goldenHorns',
+    rewardAmount: 1,
+    completed: false,
+    claimed: false,
+    icon: '🐺',
   },
 ];

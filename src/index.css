@@ -1,1 +1,158 @@
 @import "tailwindcss";
+
+/* --------------------------------------------------------
+   Performance Optimized CSS Animations
+   (Offloads Framer Motion & JS animations to GPU compositor)
+   -------------------------------------------------------- */
+
+/* 1. Floating Click Wool Particle Animation */
+@keyframes float-up {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--particle-drift, 0px)), -40px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--particle-drift, 0px)), -110px) scale(0.95);
+  }
+}
+
+.animate-float-up {
+  animation: float-up 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* 2. Sun Rotation & Breathing Pulse */
+@keyframes sun-rotate {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.animate-sun-spin {
+  animation: sun-rotate 28s linear infinite;
+  will-change: transform;
+}
+
+/* 3. Floating Clouds (GPU-accelerated linear translation) */
+@keyframes cloud-drift-fast {
+  0% {
+    transform: translate3d(-150px, 0, 0);
+  }
+  100% {
+    transform: translate3d(calc(100vw + 150px), 0, 0);
+  }
+}
+
+@keyframes cloud-drift-mid {
+  0% {
+    transform: translate3d(-200px, 0, 0) scale(0.9);
+  }
+  100% {
+    transform: translate3d(calc(100vw + 200px), 0, 0) scale(0.9);
+  }
+}
+
+@keyframes cloud-drift-slow {
+  0% {
+    transform: translate3d(-180px, 0, 0) scale(0.75);
+  }
+  100% {
+    transform: translate3d(calc(100vw + 180px), 0, 0) scale(0.75);
+  }
+}
+
+.animate-cloud-1 {
+  animation: cloud-drift-fast 65s linear infinite;
+  will-change: transform;
+}
+
+.animate-cloud-2 {
+  animation: cloud-drift-mid 90s linear infinite -15s;
+  will-change: transform;
+}
+
+.animate-cloud-3 {
+  animation: cloud-drift-slow 75s linear infinite -35s;
+  will-change: transform;
+}
+
+/* 4. Butterfly Flight Paths & Wing Flapping */
+@keyframes butterfly-flutter-left {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate3d(120px, -40px, 0) rotate(15deg);
+  }
+  50% {
+    transform: translate3d(240px, -10px, 0) rotate(-10deg);
+  }
+  75% {
+    transform: translate3d(160px, 30px, 0) rotate(20deg);
+  }
+}
+
+@keyframes butterfly-flutter-right {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate3d(-150px, -40px, 0) rotate(-12deg);
+  }
+  50% {
+    transform: translate3d(-280px, -10px, 0) rotate(15deg);
+  }
+  75% {
+    transform: translate3d(-180px, -50px, 0) rotate(-8deg);
+  }
+}
+
+@keyframes wing-flap-fast {
+  0%, 100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.2);
+  }
+}
+
+.animate-butterfly-left {
+  animation: butterfly-flutter-left 16s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-butterfly-right {
+  animation: butterfly-flutter-right 20s ease-in-out infinite -4s;
+  will-change: transform;
+}
+
+.animate-wing-left {
+  animation: wing-flap-fast 0.25s ease-in-out infinite;
+  transform-origin: right center;
+}
+
+.animate-wing-right {
+  animation: wing-flap-fast 0.25s ease-in-out infinite;
+  transform-origin: left center;
+}
+
+.animate-wing-left-blue {
+  animation: wing-flap-fast 0.3s ease-in-out infinite;
+  transform-origin: right center;
+}
+
+.animate-wing-right-blue {
+  animation: wing-flap-fast 0.3s ease-in-out infinite;
+  transform-origin: left center;
+}

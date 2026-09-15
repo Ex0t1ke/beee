@@ -17,6 +17,8 @@ export interface Accessory {
   unlockedAtWool: number;
   icon: string;
   color?: string;
+  bonusType?: 'clickBonus' | 'passiveBonus' | 'critChance';
+  bonusValue?: number;
 }
 
 export interface PetDefinition {
@@ -51,7 +53,7 @@ export interface Achievement {
   title: string;
   description: string;
   target: number;
-  type: 'totalWool' | 'clicks' | 'upgrades' | 'pets';
+  type: 'totalWool' | 'clicks' | 'upgrades' | 'pets' | 'prestige';
   unlocked: boolean;
   icon: string;
 }
@@ -60,4 +62,58 @@ export interface GoldenCloverBuff {
   active: boolean;
   timeLeft: number;
   multiplier: number;
+}
+
+// --- New Mechanics Types ---
+
+// 1. Prestige / Reincarnation (Возрождение пастбища)
+export interface PrestigeUpgrade {
+  id: string;
+  name: string;
+  description: string;
+  cost: number; // In Golden Horns
+  level: number;
+  maxLevel: number;
+  effectType: 'allWoolMultiplier' | 'clickCritRate' | 'offlineEfficiency' | 'cloverFrequency';
+  valuePerLevel: number;
+  icon: string;
+}
+
+// 2. Weather Engine
+export type WeatherType = 'sunny' | 'rainbow' | 'rain' | 'night' | 'windy';
+
+export interface WeatherState {
+  type: WeatherType;
+  name: string;
+  description: string;
+  icon: string;
+  duration: number; // seconds remaining
+  woolMultiplier: number;
+  clickMultiplier: number;
+  colorFilter?: string;
+}
+
+// 3. Mini-game: Wolf defense / Shepherd alert
+export interface WolfEncounter {
+  id: number;
+  x: number; // percentage across pasture
+  y: number; // percentage down pasture
+  clicksRequired: number;
+  clicksRemaining: number;
+  timeLeft: number; // seconds until wolf steals wool
+  bounty: number; // reward in wool
+}
+
+// 4. Daily Shepherd Quests
+export interface DailyQuest {
+  id: string;
+  title: string;
+  description: string;
+  target: number;
+  current: number;
+  rewardType: 'wool' | 'goldenHorns';
+  rewardAmount: number;
+  completed: boolean;
+  claimed: boolean;
+  icon: string;
 }
