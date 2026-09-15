@@ -27,9 +27,6 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Node Dependencies
         run: npm install
 
@@ -42,6 +39,9 @@ jobs:
           npx cap init "Sheep Clicker" "com.sheep.clicker" --web-dir dist
           npx cap add android
           npx cap sync android
+          # Bump versionCode to 2 and versionName to 1.1.0 for seamless in-place updates on Android
+          sed -i 's/versionCode 1/versionCode 2/g' android/app/build.gradle
+          sed -i 's/versionName "1.0"/versionName "1.1.0"/g' android/app/build.gradle
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -55,6 +55,6 @@ jobs:
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sheep-clicker-apk
+          name: sheep-clicker-v1.1.0-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
