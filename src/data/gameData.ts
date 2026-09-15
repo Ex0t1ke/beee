@@ -1,4 +1,4 @@
-import { Upgrade, Accessory, Achievement } from '../types';
+import { Upgrade, Accessory, Achievement, PetDefinition } from '../types';
 
 export const INITIAL_UPGRADES: Upgrade[] = [
   // Click power upgrades
@@ -57,6 +57,17 @@ export const INITIAL_UPGRADES: Upgrade[] = [
     owned: 0,
     icon: 'Wand2',
   },
+  {
+    id: 'laser_shears',
+    name: 'Квантовый триммер',
+    description: 'Космические нано-лучи моментально собирают идеальные рулоны шерсти.',
+    cost: 75000,
+    costMultiplier: 1.32,
+    type: 'click',
+    power: 900,
+    owned: 0,
+    icon: 'Zap',
+  },
 
   // Passive paddock upgrades
   {
@@ -105,7 +116,7 @@ export const INITIAL_UPGRADES: Upgrade[] = [
   },
   {
     id: 'sheepdog',
-    name: 'Дружелюбный пёс Бобик',
+    name: 'Пастуший сенбернар',
     description: 'Охраняет загон и собирает упавшие комочки шерсти.',
     cost: 8500,
     costMultiplier: 1.22,
@@ -135,6 +146,64 @@ export const INITIAL_UPGRADES: Upgrade[] = [
     power: 2000,
     owned: 0,
     icon: 'CloudRain',
+  },
+];
+
+export const PET_DEFINITIONS: PetDefinition[] = [
+  {
+    id: 'pet_bunny',
+    name: 'Кролик Пушок',
+    species: 'bunny',
+    description: 'Шустрый белый зайка. Обожает морковку и собирает опавшую шерсть в траве (+3 шерсти/сек).',
+    cost: 80,
+    woolPerSecondBonus: 3,
+    clickBonusMultiplier: 0.05,
+    icon: '🐰',
+    dialogueLines: ['Фырк-фырк! 🥕', 'Я нашел комочек шерсти!', 'Прыг-скок! ✨'],
+  },
+  {
+    id: 'pet_chick',
+    name: 'Цыплёнок Пип',
+    species: 'chick',
+    description: 'Жёлтый пушистый комочек. Клюёт зернышки и будит овечку на рассвете (+8 шерсти/сек).',
+    cost: 450,
+    woolPerSecondBonus: 8,
+    clickBonusMultiplier: 0.08,
+    icon: '🐥',
+    dialogueLines: ['Пи-пи-пи! 🌾', 'Доброе утро на ферме!', 'Чирик! ☀️'],
+  },
+  {
+    id: 'pet_dog',
+    name: 'Щенок Дружок',
+    species: 'dog',
+    description: 'Верный пёсик в бандане. Охраняет овечку и приносит ей сочные яблочки (+25 шерсти/сек).',
+    cost: 1800,
+    woolPerSecondBonus: 25,
+    clickBonusMultiplier: 0.12,
+    icon: '🐶',
+    dialogueLines: ['Гав-тяф! 🦴', 'Я сторожу загон!', 'Давай играть! 🎾'],
+  },
+  {
+    id: 'pet_cat',
+    name: 'Кот Мурзик',
+    species: 'cat',
+    description: 'Рыжий пушистый кот. Мурлычет на солнышке и разглаживает овечью шерстку (+75 шерсти/сек).',
+    cost: 7500,
+    woolPerSecondBonus: 75,
+    clickBonusMultiplier: 0.15,
+    icon: '🐱',
+    dialogueLines: ['Мур-мяу... 🧶', 'Погладь меня за ушком!', 'Тепло и уютно... 🐾'],
+  },
+  {
+    id: 'pet_piglet',
+    name: 'Поросёнок Хрюша',
+    species: 'piglet',
+    description: 'Весёлый розовый поросенок. Находит под клевером золотые желуди и клады (+220 шерсти/сек).',
+    cost: 30000,
+    woolPerSecondBonus: 220,
+    clickBonusMultiplier: 0.2,
+    icon: '🐷',
+    dialogueLines: ['Хрю-хрю! 🍀', 'Я нашел сочный трюфель!', 'Лето в самом разгаре! 💖'],
   },
 ];
 
@@ -212,6 +281,15 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🧣',
   },
   {
+    id: 'first_pet',
+    title: 'Верный друг',
+    description: 'Приютите своего первого питомца',
+    target: 1,
+    type: 'pets',
+    unlocked: false,
+    icon: '🐾',
+  },
+  {
     id: 'pasture_master',
     title: 'Хозяин загона',
     description: 'Соберите 1 000 шерсти',
@@ -237,5 +315,14 @@ export const ACHIEVEMENTS: Achievement[] = [
     type: 'clicks',
     unlocked: false,
     icon: '❤️',
+  },
+  {
+    id: 'zoo_keeper',
+    title: 'Шумная компания',
+    description: 'Соберите всех 5 питомцев на ферме',
+    target: 5,
+    type: 'pets',
+    unlocked: false,
+    icon: '🌟',
   },
 ];

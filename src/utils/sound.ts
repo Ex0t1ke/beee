@@ -102,13 +102,14 @@ export function playShearSnip() {
     gain.connect(ctx.destination);
 
     noise.start(now);
+    noise.stop(now + 0.06);
   } catch {
     // ignore
   }
 }
 
 /**
- * Bouncy wool pop
+ * Wool pop bubble sound
  */
 export function playWoolPop() {
   try {
@@ -119,12 +120,12 @@ export function playWoolPop() {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
+    const startFreq = 420 + Math.random() * 80;
     osc.type = 'sine';
-    const startFreq = 300 + Math.random() * 100;
     osc.frequency.setValueAtTime(startFreq, now);
     osc.frequency.exponentialRampToValueAtTime(startFreq * 2.2, now + 0.08);
 
-    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.setValueAtTime(0.18, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
 
     osc.connect(gain);
@@ -195,6 +196,93 @@ export function playGoldenChime() {
 
       osc.start(noteTime);
       osc.stop(noteTime + 0.3);
+    });
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Cute pet interaction sound (meow, squeak, bark, chirp)
+ */
+export function playPetSound(species: string) {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    if (species === 'bunny') {
+      // High-pitched soft squeak
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(1400, now + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(950, now + 0.16);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+    } else if (species === 'chick') {
+      // Cheerful peep-peep
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1600, now);
+      osc.frequency.exponentialRampToValueAtTime(2200, now + 0.07);
+      gain.gain.setValueAtTime(0.14, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    } else if (species === 'dog') {
+      // Playful woof bark
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(180, now + 0.12);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+    } else if (species === 'cat') {
+      // Gentle purr/meow
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(780, now + 0.15);
+      osc.frequency.exponentialRampToValueAtTime(450, now + 0.3);
+      gain.gain.setValueAtTime(0.13, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+    } else {
+      // Piglet oink
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(240, now);
+      osc.frequency.exponentialRampToValueAtTime(360, now + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.18);
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    }
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.35);
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Pet feeding crunchy munch sound
+ */
+export function playPetFeedSound() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [0, 0.07, 0.14].forEach((t, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(500 + i * 150, now + t);
+      osc.frequency.exponentialRampToValueAtTime(350, now + t + 0.06);
+      gain.gain.setValueAtTime(0.12, now + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + t + 0.06);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + t);
+      osc.stop(now + t + 0.06);
     });
   } catch {
     // ignore
